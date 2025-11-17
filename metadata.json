@@ -1,0 +1,5 @@
+{
+  "name": "Obstetrics & Midwifery Assistant",
+  "description": "A comprehensive, clinically-accurate tool for managing pregnancy, calculating gestational age, and providing evidence-based antenatal care guidance according to ACOG, RCOG, and WHO guidelines. Features include a dynamic pregnancy timeline, visit planner, red flag alerts, growth tracking, and medication safety information.",
+  "requestFramePermissions": []
+}

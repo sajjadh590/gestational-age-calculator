@@ -1,0 +1,86 @@
+import { translations } from "./i18n";
+
+export interface JalaliDate {
+  jy: number;
+  jm: number;
+  jd: number;
+}
+
+// New type for Ultrasound Data
+export interface UltrasoundData {
+    crl?: number; // mm
+    bpd?: number; // mm
+    hc?: number;  // mm
+    ac?: number;  // mm
+    fl?: number;  // mm
+    scanDate: Date;
+    gaOnScanDateDays?: number; // GA in days as reported on the scan date
+}
+
+
+export interface Pregnancy {
+  lmp?: Date; // Now optional
+  ultrasound?: UltrasoundData;
+  gaDays: number; // Gestational age in total days on the CurrentDate
+  edc: Date; // Final, reconciled EDC
+  datingMethod: string; // 'LMP', 'Ultrasound', or a reconciled method name
+  reconciliationMessage?: string; // Explanation from reconciliation
+  currentDate: Date;
+}
+
+export interface PregnancyData {
+  pregnancy: Pregnancy;
+  gaWeeks: number;
+  gaRemainderDays: number;
+  trimester: 1 | 2 | 3;
+  today: Date;
+  currentJalaliDate: string;
+  edcJalali: string;
+  carePlan: CarePlan;
+  visitSchedule: Visit[];
+  redFlags: RedFlag[];
+  daysPassedFromLMP?: number;
+}
+
+export enum EventCategory {
+  Test = "Lab Test",
+  Ultrasound = "Ultrasound",
+  Screening = "Screening",
+  Medication = "Medication/Supplement",
+  Counseling = "Counseling & Education",
+  Milestone = "Key Milestone",
+  Warning = "Red Flag"
+}
+
+export type BilingualString = {
+  fa: string;
+  en: string;
+};
+
+export interface ClinicalEvent {
+  name: BilingualString;
+  description: BilingualString;
+  category: EventCategory;
+  startWeek: number;
+  endWeek: number;
+  isCritical?: boolean;
+}
+
+export interface CarePlan {
+  upcoming: ClinicalEvent[];
+  completed: ClinicalEvent[];
+  missed: ClinicalEvent[];
+}
+
+export interface Visit {
+  week: number;
+  date: Date;
+  jalaliDate: string;
+  tasks: (keyof typeof translations)[];
+}
+
+export interface RedFlag {
+    title: BilingualString;
+    details: BilingualString;
+    symptoms: BilingualString[];
+}
