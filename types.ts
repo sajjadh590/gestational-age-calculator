@@ -1,12 +1,9 @@
-import { translations } from "./i18n";
-
 export interface JalaliDate {
   jy: number;
   jm: number;
   jd: number;
 }
 
-// New type for Ultrasound Data
 export interface UltrasoundData {
     crl?: number; // mm
     bpd?: number; // mm
@@ -17,15 +14,35 @@ export interface UltrasoundData {
     gaOnScanDateDays?: number; // GA in days as reported on the scan date
 }
 
+// For Charting
+export interface Vital {
+  date: string; // ISO string for simplicity
+  weight?: number; // in kg
+  bpSystolic?: number;
+  bpDiastolic?: number;
+}
+
+export interface FetalBiometryEntry {
+  date: string; // ISO string
+  gaWeeks: number; // GA at time of scan
+  bpd?: number; // mm
+  hc?: number;  // mm
+  ac?: number;  // mm
+  fl?: number;  // mm
+}
 
 export interface Pregnancy {
-  lmp?: Date; // Now optional
+  id: string;
+  name: string;
+  lmp?: Date;
   ultrasound?: UltrasoundData;
-  gaDays: number; // Gestational age in total days on the CurrentDate
-  edc: Date; // Final, reconciled EDC
-  datingMethod: string; // 'LMP', 'Ultrasound', or a reconciled method name
-  reconciliationMessage?: string; // Explanation from reconciliation
+  gaDays: number;
+  edc: Date;
+  datingMethod: string;
+  reconciliationMessage?: string;
   currentDate: Date;
+  vitals: Vital[];
+  fetalBiometry: FetalBiometryEntry[];
 }
 
 export interface PregnancyData {
@@ -72,11 +89,20 @@ export interface CarePlan {
   missed: ClinicalEvent[];
 }
 
+export type VisitTaskKey =
+  | 'taskBP'
+  | 'taskWeight'
+  | 'taskUA'
+  | 'taskFHR'
+  | 'taskFH'
+  | 'taskFetalMovement'
+  | 'taskCervicalExam';
+
 export interface Visit {
   week: number;
   date: Date;
   jalaliDate: string;
-  tasks: (keyof typeof translations)[];
+  tasks: VisitTaskKey[];
 }
 
 export interface RedFlag {

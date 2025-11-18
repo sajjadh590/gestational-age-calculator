@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-// FIX: Removed unused import of `translations` which was causing an error.
-import { PregnancyData, Visit, RedFlag } from '../types';
+import { Pregnancy, PregnancyData, Visit, RedFlag } from '../types';
 import { formatGregorian } from '../services/calendarService';
 import { Timeline } from './Timeline';
 import { CarePlan } from './CarePlan';
@@ -8,9 +7,9 @@ import { Language, t } from '../i18n';
 
 type View = 'timeline' | 'visits' | 'redflags';
 
-export const Dashboard: React.FC<{ pregnancyData: PregnancyData; lang: Language }> = ({ pregnancyData, lang }) => {
+export const Dashboard: React.FC<{ pregnancyData: PregnancyData; onUpdate: (data: Partial<Pregnancy>) => void; lang: Language }> = ({ pregnancyData, onUpdate, lang }) => {
   const [activeView, setActiveView] = useState<View>('timeline');
-  const { gaWeeks, redFlags, visitSchedule } = pregnancyData;
+  const { gaWeeks, redFlags, visitSchedule, pregnancy } = pregnancyData;
 
   const renderView = () => {
     switch (activeView) {
@@ -58,6 +57,12 @@ const SummaryCard: React.FC<{data: PregnancyData, lang: Language}> = ({ data, la
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-lg">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-primary-800">{pregnancy.name || t('untitledCase', lang)}</h2>
+          <p className="text-sm text-gray-500">{t('datingMethod', lang)}: {pregnancy.datingMethod}</p>
+        </div>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
         {/* GA Card */}
         <div className="p-4 bg-primary-50 rounded-lg">

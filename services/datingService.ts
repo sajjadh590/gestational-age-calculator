@@ -1,4 +1,8 @@
-import { addDays, daysBetween } from './calendarService';
+import { addDays, daysBetween, toJalali, fromJalali, getJalaliMonthLength } from './calendarService';
+
+// Standard term pregnancy duration in days.
+// This constant ensures all calculations use the exact 280-day timedelta.
+export const TERM_PREGNANCY_DAYS = 280;
 
 /**
  * Calculates Gestational Age (GA) in days from Crown-Rump Length (CRL) in mm.
@@ -35,12 +39,52 @@ export const calculateGAfromBiometry = (biometry: { bpd?: number, hc?: number, a
     return Math.round(averageGA);
 };
 
+/**
+ * Calculates EDC based on LMP using the Iranian Clinical Rule (Jalali Naegele's Rule).
+ * Rule: Add 9 Months and 7 Days to the Jalali LMP date.
+ * This aligns with local clinical standards (e.g., 20/11 + 9m7d -> 27/8).
+ * 
+ * Note: This method prioritizes the cultural/clinical convention over exact physics.
+ * Because the first 6 months of the Jalali year have 31 days, this result may 
+ * differ from the exact "LMP + 280 days" calculation by a few days (typically 281-284 days total).
+ */
 export const calculateEDCfromLMP = (lmp: Date): Date => {
-  return addDays(lmp, 280);
+    const jLmp = toJalali(lmp);
+    let { jy, jm, jd } = jLmp;
+
+    // 1. Add 7 days
+    jd += 7;
+
+    // 2. Handle Day Overflow
+    const daysInMonth = getJalaliMonthLength(jy, jm);
+    if (jd > daysInMonth) {
+        jd -= daysInMonth;
+        jm += 1;
+        if (jm > 12) {
+            jm = 1;
+            jy += 1;
+        }
+    }
+
+    // 3. Add 9 Months
+    jm += 9;
+    
+    // 4. Handle Month Overflow
+    while (jm > 12) {
+        jm -= 12;
+        jy += 1;
+    }
+
+    return fromJalali({ jy, jm, jd });
 };
 
+/**
+ * Calculates EDC based on a known GA at a specific Scan Date.
+ * Formula: ScanDate + (280 - GA_in_days)
+ * This remains based on the biological standard of 280 days (40 weeks).
+ */
 export const calculateEDCfromGA = (gaDays: number, scanDate: Date): Date => {
-    const remainingDays = 280 - gaDays;
+    const remainingDays = TERM_PREGNANCY_DAYS - gaDays;
     return addDays(scanDate, remainingDays);
 };
 
@@ -57,10 +101,12 @@ export const reconcileDates = (
 ): { finalEDC: Date; methodKey: 'lmp' | 'ultrasound'; messageKey: string } => {
 
     const edcByLMP = calculateEDCfromLMP(lmp);
+    // Calculates exact calendar days between LMP and Scan Date
     const gaByLMPOnScanDate = daysBetween(lmp, ultrasound.scanDate);
     const edcByUS = calculateEDCfromGA(ultrasound.gaDays, ultrasound.scanDate);
     
-    const discrepancy = Math.abs(gaByLMPOnScanDate - ultrasound.gaDays);
+    // Calculate discrepancy between the two EDCs in days
+    const discrepancy = daysBetween(edcByLMP, edcByUS);
 
     let methodKey: 'lmp' | 'ultrasound' = 'lmp';
     let messageKey = 'reconcile_useLMP';

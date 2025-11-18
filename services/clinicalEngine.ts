@@ -1,13 +1,20 @@
-import { Pregnancy, PregnancyData, CarePlan, Visit, RedFlag } from '../types';
-// FIX: Import `translations` from its source in `i18n.ts` instead of from `types.ts`, where it isn't exported. This resolves type resolution errors.
-import { translations } from '../i18n';
-import { addDays, daysBetween, toJalali, formatJalali } from './calendarService';
+import { Pregnancy, PregnancyData, CarePlan, Visit, RedFlag, VisitTaskKey } from '../types';
+import { addDays, diffDays, toJalali, formatJalali } from './calendarService';
 import { CLINICAL_EVENTS, RED_FLAGS_BY_TRIMESTER } from '../constants';
+import { TERM_PREGNANCY_DAYS } from './datingService';
 
 export const getPregnancyData = (pregnancy: Pregnancy): PregnancyData => {
   const today = new Date();
-  // The GA is now calculated from the final EDC. 280 days total pregnancy length.
-  const gaDays = 280 - daysBetween(today, pregnancy.edc);
+  
+  // Calculate the difference in days between today and the EDC using signed integer math.
+  // If Today is BEFORE EDC, daysRemaining is POSITIVE.
+  // If Today is AFTER EDC (Overdue), daysRemaining is NEGATIVE.
+  const daysRemaining = diffDays(today, pregnancy.edc);
+
+  // Calculate Gestational Age in days.
+  // 280 - DaysRemaining.
+  const gaDays = TERM_PREGNANCY_DAYS - daysRemaining;
+  
   const gaWeeks = Math.floor(gaDays / 7);
   const gaRemainderDays = gaDays % 7;
   
@@ -21,11 +28,15 @@ export const getPregnancyData = (pregnancy: Pregnancy): PregnancyData => {
   const carePlan = getCarePlan(gaWeeks);
   // The visit schedule should be based on the final EDC, not the raw LMP.
   // We can calculate a "virtual" LMP from the final EDC for this.
-  const virtualLMP = addDays(pregnancy.edc, -280);
+  const virtualLMP = addDays(pregnancy.edc, -TERM_PREGNANCY_DAYS);
   const visitSchedule = generateVisitSchedule(virtualLMP);
   const redFlags = getRedFlags(trimester);
   
-  const daysPassedFromLMP = pregnancy.lmp ? daysBetween(pregnancy.lmp, today) : undefined;
+  // Fix: Align daysPassedFromLMP with gaDays. 
+  // This ensures that DaysPassed (gaDays) + DaysRemaining (280 - gaDays) always equals 280.
+  // This overrides the physical calendar duration (which might be 283 days due to Jalali leap years/month lengths)
+  // with the clinical "40 weeks" duration.
+  const daysPassedFromLMP = gaDays;
   
   return {
     pregnancy: updatedPregnancy,
@@ -79,9 +90,9 @@ const getCarePlan = (gaWeeks: number): CarePlan => {
 
 const generateVisitSchedule = (virtualLMP: Date): Visit[] => {
     const schedule: Visit[] = [];
-    const standardTasks: (keyof typeof translations)[] = ['taskBP', 'taskWeight', 'taskUA', 'taskFHR', 'taskFH'];
-    const lateTasks: (keyof typeof translations)[] = [...standardTasks, 'taskFetalMovement'];
-    const finalTasks: (keyof typeof translations)[] = [...lateTasks, 'taskCervicalExam'];
+    const standardTasks: VisitTaskKey[] = ['taskBP', 'taskWeight', 'taskUA', 'taskFHR', 'taskFH'];
+    const lateTasks: VisitTaskKey[] = [...standardTasks, 'taskFetalMovement'];
+    const finalTasks: VisitTaskKey[] = [...lateTasks, 'taskCervicalExam'];
     
     // From 4 to 28 weeks: every 4 weeks
     for (let week = 8; week <= 28; week += 4) {
@@ -98,7 +109,7 @@ const generateVisitSchedule = (virtualLMP: Date): Visit[] => {
     return schedule;
 };
 
-const createVisit = (lmp: Date, week: number, tasks: (keyof typeof translations)[]): Visit => {
+const createVisit = (lmp: Date, week: number, tasks: VisitTaskKey[]): Visit => {
     const visitDate = addDays(lmp, week * 7);
     return {
         week,

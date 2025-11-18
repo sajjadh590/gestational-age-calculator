@@ -8,9 +8,6 @@ This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1PoF5ZrP9jKtSob4AHdrQo0m7oX9CHCBh
 
-view in website : 
-https://ob-calc.netlify.app/
-
 ## Run Locally
 
 **Prerequisites:**  Node.js

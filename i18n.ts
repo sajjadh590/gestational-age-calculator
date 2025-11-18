@@ -8,14 +8,33 @@ export const translations = {
     fa: "پرونده جدید",
     en: "New Case",
   },
+  saveCase: { fa: "ذخیره پرونده", en: "Save Case" },
+  manageCases: { fa: "مدیریت پرونده‌ها", en: "Manage Cases" },
+  cases: { fa: "پرونده‌ها", en: "Cases" },
+  patientManagerTitle: { fa: "لیست پرونده‌های ذخیره شده", en: "Saved Case List" },
+  loadCase: { fa: "مشاهده", en: "View" },
+  deleteCase: { fa: "حذف", en: "Delete" },
+  noSavedCases: { fa: "هیچ پرونده ذخیره شده‌ای وجود ندارد.", en: "No saved cases found." },
+  enterPatientName: { fa: "لطفا نام یا شناسه بیمار را وارد کنید:", en: "Please enter a patient name or identifier:" },
+  caseSaved: { fa: "با موفقیت ذخیره شد.", en: "saved successfully." },
+  confirmDeleteCase: { fa: "آیا از حذف این پرونده مطمئن هستید؟ این عمل غیرقابل بازگشت است.", en: "Are you sure you want to delete this case? This action cannot be undone." },
+  untitledCase: { fa: "پرونده بدون نام", en: "Untitled Case" },
+  addPatient: { fa: "افزودن بیمار جدید", en: "Add New Patient" },
+  patientNamePrompt: { fa: "نام یا شناسه بیمار", en: "Patient Name / ID" },
+  backToPatientList: { fa: "لیست بیماران", en: "Patient List" },
+  cancel: { fa: "انصراف", en: "Cancel" },
+  welcomeMessage: { fa: "به دستیار مامایی و زنان خوش آمدید!", en: "Welcome to the Obstetrics & Midwifery Assistant!" },
+  welcomeCTA: { fa: "برای شروع، اولین بیمار خود را اضافه کنید.", en: "Add your first patient to get started." },
+
+
   // GACalculator
   gaCalculatorTitle: {
     fa: "محاسبه و تعیین سن بارداری",
     en: "Pregnancy Dating & Reconciliation",
   },
   gaCalculatorSubtitle: {
-      fa: "اطلاعات LMP و/یا سونوگرافی را برای محاسبه دقیق سن بارداری وارد کنید.",
-      en: "Enter LMP and/or Ultrasound data for accurate gestational age calculation."
+      fa: "اطلاعات بیمار، LMP و/یا سونوگرافی را برای محاسبه دقیق سن بارداری وارد کنید.",
+      en: "Enter patient info, LMP, and/or Ultrasound data for accurate GA calculation."
   },
   lmpDatingTab: {
     fa: "اطلاعات LMP",
@@ -39,9 +58,9 @@ export const translations = {
   hcLabel: { fa: "HC (mm)", en: "HC (mm)" },
   acLabel: { fa: "AC (mm)", en: "AC (mm)" },
   flLabel: { fa: "FL (mm)", en: "FL (mm)" },
-  ultrasoundInstruction: {
-    fa: "برای محاسبه سن، اندازه‌گیری‌های سونوگرافی امروز را وارد کنید.",
-    en: "Enter today's ultrasound measurements to calculate GA.",
+  usBiometryInstruction: {
+    fa: "برای محاسبه سن، اندازه‌گیری‌های بیومتری را وارد کنید.",
+    en: "Enter biometry measurements to calculate GA.",
   },
   usReportInstruction: {
       fa: "سن بارداری گزارش شده در سونوگرافی قبلی را وارد کنید.",
@@ -71,6 +90,10 @@ export const translations = {
       fa: "خطا در محاسبه. لطفا ورودی‌ها را بررسی کنید.",
       en: "Calculation error. Please check your inputs."
   },
+  ultrasoundDateMissing: { 
+    fa: "لطفا تاریخ سونوگرافی را برای مقادیر بیومتری وارد کنید.", 
+    en: "Please enter the scan date for the biometry values." 
+  },
   // Results Display
   calculationResults: {
     fa: "نتایج محاسبه",
@@ -87,7 +110,7 @@ export const translations = {
     en: "Reconciliation Note",
   },
   finalEDC: { fa: "تاریخ تخمینی زایمان (EDC)", en: "Final Estimated Due Date (EDC)"},
-  confirmAndStart: { fa: "تایید و شروع پایش", en: "Confirm and Start Monitoring" },
+  confirmAndStart: { fa: "ایجاد پرونده و شروع پایش", en: "Create Case & Start Monitoring" },
   usVsLMPComparison: { fa: "مقایسه LMP با سونوگرافی", en: "LMP vs. Ultrasound Comparison" },
   edcByLMP: { fa: "EDC بر اساس LMP", en: "EDC from LMP" },
   edcByUS: { fa: "EDC بر اساس سونوگرافی", en: "EDC from Ultrasound" },
@@ -111,11 +134,11 @@ export const translations = {
     en: "Discrepancy >10 days in mid second trimester (16w-21w6d). Ultrasound EDC is more reliable per ACOG.",
   },
   reconcile_t2_late: {
-    fa: "مغایرت >۱۴ روز در اواخر سه ماهه دوم (22-27هفته و ۶ روز). EDC سونوگرافی طبق ACOG معتبرتر است.",
+    fa: "مغایرت >۱۴ روز در اواخر سه ماهه دوم (22-27هفته و ۶ روز). EDC سonoگرافی طبق ACOG معتبرتر است.",
     en: "Discrepancy >14 days in late second trimester (22w-27w6d). Ultrasound EDC is more reliable per ACOG.",
   },
   reconcile_t3: {
-    fa: "مغایرت >۲۱ روز در سه ماهه سوم (>=28هفته). EDC سونوگرافی طبق ACOG معتبرتر است.",
+    fa: "مغایرت >۲۱ روز در سه ماهه سوم (>=28هفته). EDC سonoگرافی طبق ACOG معتبرتر است.",
     en: "Discrepancy >21 days in third trimester (>=28w). Ultrasound EDC is more reliable per ACOG.",
   },
   reconcile_useLMP: {
@@ -124,6 +147,7 @@ export const translations = {
   },
 
   // Dashboard
+  patientName: { fa: "نام بیمار:", en: "Patient Name:" },
   ga: { fa: "سن بارداری", en: "Gestational Age" },
   trimester: { fa: "سه ماهه", en: "Trimester" },
   edc: { fa: "تاریخ تخمینی زایمان", en: "Estimated Delivery Date" },
@@ -141,7 +165,7 @@ export const translations = {
   pastVisits: { fa: "ویزیت‌های گذشته", en: "Past Visits" },
   redFlagsTitle: { fa: "علائم خطر مهم در این مرحله", en: "Important Red Flags for this Stage" },
   keySymptoms: { fa: "علائم کلیدی:", en: "Key Symptoms:" },
-  
+
   // Visit Planner Tasks
   taskBP: { fa: "فشار خون", en: "BP" },
   taskWeight: { fa: "وزن", en: "Weight" },

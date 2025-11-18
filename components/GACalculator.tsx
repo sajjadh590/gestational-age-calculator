@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { fromJalali, isValidJalali, daysBetween, addDays } from '../services/calendarService';
-import { calculateGAfromCRL, calculateGAfromBiometry, calculateEDCfromLMP, calculateEDCfromGA, reconcileDates } from '../services/datingService';
+import { fromJalali, isValidJalali, daysBetween, addDays, diffDays } from '../services/calendarService';
+import { calculateGAfromCRL, calculateGAfromBiometry, calculateEDCfromLMP, calculateEDCfromGA, reconcileDates, TERM_PREGNANCY_DAYS } from '../services/datingService';
 import { Pregnancy, UltrasoundData } from '../types';
 import { Language, t, translations } from '../i18n';
 
@@ -26,6 +26,7 @@ interface CalculationResult {
 
 export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang }) => {
   // Common State
+  const [patientName, setPatientName] = useState('');
   const [error, setError] = useState('');
   const [result, setResult] = useState<CalculationResult | null>(null);
 
@@ -36,6 +37,9 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
 
   // Ultrasound State
   const [usInputMode, setUsInputMode] = useState<UltrasoundInputMode>('biometry');
+  const [usJy, setUsJy] = useState('');
+  const [usJm, setUsJm] = useState('');
+  const [usJd, setUsJd] = useState('');
   // Biometry State
   const [crl, setCrl] = useState('');
   const [bpd, setBpd] = useState('');
@@ -43,9 +47,6 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
   const [ac, setAc] = useState('');
   const [fl, setFl] = useState('');
   // Report State
-  const [usJy, setUsJy] = useState('');
-  const [usJm, setUsJm] = useState('');
-  const [usJd, setUsJd] = useState('');
   const [usGaWeeks, setUsGaWeeks] = useState('');
   const [usGaDays, setUsGaDays] = useState('');
 
@@ -59,24 +60,35 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
       : undefined;
 
     let gaByUS: number | null = null; // This will be GA in days ON THE SCAN DATE
-    let usScanDate: Date | undefined = undefined;
+    // Fix: Corrected typo from isValidJali to isValidJalali.
+    let usScanDate: Date | undefined = isValidJalali(parseInt(usJy), parseInt(usJm), parseInt(usJd))
+        ? fromJalali({ jy: parseInt(usJy), jm: parseInt(usJm), jd: parseInt(usJd) })
+        : undefined;
     let ultrasoundForPregnancyObject: UltrasoundData | undefined;
 
-    if (usInputMode === 'biometry') {
-        const crlNum = parseFloat(crl);
-        const bpdNum = parseFloat(bpd);
-        const hcNum = parseFloat(hc);
-        const acNum = parseFloat(ac);
-        const flNum = parseFloat(fl);
+    const crlNum = parseFloat(crl);
+    const bpdNum = parseFloat(bpd);
+    const hcNum = parseFloat(hc);
+    const acNum = parseFloat(ac);
+    const flNum = parseFloat(fl);
+    const hasBiometryInput = !isNaN(crlNum) || !isNaN(bpdNum) || !isNaN(hcNum) || !isNaN(acNum) || !isNaN(flNum);
+    
+    const gaWeeksNum = parseInt(usGaWeeks);
+    const gaDaysNum = parseInt(usGaDays);
+    const hasReportInput = !isNaN(gaWeeksNum) || !isNaN(gaDaysNum);
 
+    if (usInputMode === 'biometry' && hasBiometryInput) {
+        if (!usScanDate) {
+            setError(t('ultrasoundDateMissing', lang));
+            return;
+        }
         if (!isNaN(crlNum) && crlNum > 0) {
             gaByUS = calculateGAfromCRL(crlNum);
-        } else if (!isNaN(bpdNum) || !isNaN(hcNum) || !isNaN(acNum) || !isNaN(flNum)) {
+        } else {
             gaByUS = calculateGAfromBiometry({ bpd: bpdNum || undefined, hc: hcNum || undefined, ac: acNum || undefined, fl: flNum || undefined });
         }
         
         if (gaByUS) {
-            usScanDate = new Date(); // Biometry assumes today's scan
             ultrasoundForPregnancyObject = {
                 scanDate: usScanDate,
                 crl: !isNaN(crlNum) ? crlNum : undefined,
@@ -87,24 +99,20 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
                 gaOnScanDateDays: gaByUS,
             };
         }
-    } else { // 'report' mode
-        usScanDate = isValidJalali(parseInt(usJy), parseInt(usJm), parseInt(usJd))
-            ? fromJalali({ jy: parseInt(usJy), jm: parseInt(usJm), jd: parseInt(usJd) })
-            : undefined;
-        const gaWeeksNum = parseInt(usGaWeeks);
-        const gaDaysNum = parseInt(usGaDays);
-
-        if (usScanDate && !isNaN(gaWeeksNum) && !isNaN(gaDaysNum)) {
-            if (gaWeeksNum < 0 || gaWeeksNum > 44 || gaDaysNum < 0 || gaDaysNum > 6) {
-                setError(t('invalidGAError', lang));
-                return;
-            }
-            gaByUS = gaWeeksNum * 7 + gaDaysNum;
-            ultrasoundForPregnancyObject = {
-                scanDate: usScanDate,
-                gaOnScanDateDays: gaByUS
-            };
+    } else if (usInputMode === 'report' && hasReportInput) {
+        if (!usScanDate) {
+            setError(t('ultrasoundDateMissing', lang));
+            return;
         }
+        if (gaWeeksNum < 0 || gaWeeksNum > 44 || gaDaysNum < 0 || gaDaysNum > 6) {
+            setError(t('invalidGAError', lang));
+            return;
+        }
+        gaByUS = (gaWeeksNum || 0) * 7 + (gaDaysNum || 0);
+        ultrasoundForPregnancyObject = {
+            scanDate: usScanDate,
+            gaOnScanDateDays: gaByUS
+        };
     }
 
     if (!lmpDate && !gaByUS) {
@@ -134,7 +142,10 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
 
     const lmpEDC = lmpDate ? calculateEDCfromLMP(lmpDate) : undefined;
     const usEDC = gaByUS && usScanDate ? calculateEDCfromGA(gaByUS, usScanDate) : undefined;
-    const projectedGAToday = usEDC ? 280 - daysBetween(new Date(), usEDC) : undefined;
+    
+    // Use diffDays for signed calculation to handle overdue projections correctly.
+    // If today is after EDC, diffDays is negative, result is > 280.
+    const projectedGAToday = usEDC ? TERM_PREGNANCY_DAYS - diffDays(new Date(), usEDC) : undefined;
     
     setResult({
         finalEDC,
@@ -152,13 +163,17 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
   const handleConfirm = () => {
     if (!result) return;
     const pregnancy: Pregnancy = {
+        id: Date.now().toString() + Math.random().toString(36).substring(2),
+        name: patientName.trim() || `${t('untitledCase', lang)} - ${new Date().toLocaleDateString(lang === 'fa' ? 'fa-IR' : 'en-US')}`,
         edc: result.finalEDC,
-        gaDays: 0,
+        gaDays: 0, // This will be recalculated by the engine
         currentDate: new Date(),
         datingMethod: result.datingMethod,
         reconciliationMessage: result.reconciliationMessage,
         lmp: result.lmp,
-        ultrasound: result.ultrasound
+        ultrasound: result.ultrasound,
+        vitals: [],
+        fetalBiometry: [],
     };
     onCalculate(pregnancy);
   }
@@ -174,18 +189,35 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
       </div>
     </div>
   );
+  
+  const renderScanDateInput = () => (
+    <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('scanDate', lang)}</label>
+        <div className="grid grid-cols-3 gap-2">
+            <input type="number" value={usJd} onChange={(e) => setUsJd(e.target.value)} placeholder={t('day', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
+            <input type="number" value={usJm} onChange={(e) => setUsJm(e.target.value)} placeholder={t('month', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
+            <input type="number" value={usJy} onChange={(e) => setUsJy(e.target.value)} placeholder={t('year', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
+        </div>
+    </div>
+  );
+
 
   const renderUltrasoundForm = () => (
     <div className="p-4 border rounded-lg bg-gray-50">
       <h3 className="font-bold text-gray-800">{t('ultrasoundDatingTab', lang)}</h3>
-      <div className="flex items-center space-x-4 rtl:space-x-reverse my-3">
+      
+      <div className="my-3">
+        {renderScanDateInput()}
+      </div>
+
+      <div className="flex items-center space-x-4 rtl:space-x-reverse mb-3">
           <button onClick={() => setUsInputMode('biometry')} className={`px-3 py-1 text-sm font-medium rounded-full ${usInputMode === 'biometry' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'}`}>{t('biometryEntry', lang)}</button>
           <button onClick={() => setUsInputMode('report')} className={`px-3 py-1 text-sm font-medium rounded-full ${usInputMode === 'report' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'}`}>{t('reportEntry', lang)}</button>
       </div>
 
       {usInputMode === 'biometry' ? (
         <>
-            <p className="text-sm text-secondary mb-3">{t('ultrasoundInstruction', lang)}</p>
+            <p className="text-sm text-secondary mb-3">{t('usBiometryInstruction', lang)}</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 <input type="number" value={crl} onChange={(e) => setCrl(e.target.value)} placeholder={t('crlLabel', lang)} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
                 <input type="number" value={bpd} onChange={(e) => setBpd(e.target.value)} placeholder={t('bpdLabel', lang)} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
@@ -197,21 +229,11 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
       ) : (
          <>
             <p className="text-sm text-secondary mb-3">{t('usReportInstruction', lang)}</p>
-            <div className="space-y-3">
-                 <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">{t('scanDate', lang)}</label>
-                    <div className="grid grid-cols-3 gap-2">
-                        <input type="number" value={usJd} onChange={(e) => setUsJd(e.target.value)} placeholder={t('day', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
-                        <input type="number" value={usJm} onChange={(e) => setUsJm(e.target.value)} placeholder={t('month', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
-                        <input type="number" value={usJy} onChange={(e) => setUsJy(e.target.value)} placeholder={t('year', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
-                    </div>
-                 </div>
-                 <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">{t('gaAtScan', lang)}</label>
-                     <div className="grid grid-cols-2 gap-2">
-                        <input type="number" value={usGaWeeks} onChange={(e) => setUsGaWeeks(e.target.value)} placeholder={t('weeks', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
-                        <input type="number" value={usGaDays} onChange={(e) => setUsGaDays(e.target.value)} placeholder={t('days', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
-                    </div>
+            <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t('gaAtScan', lang)}</label>
+                 <div className="grid grid-cols-2 gap-2">
+                    <input type="number" value={usGaWeeks} onChange={(e) => setUsGaWeeks(e.target.value)} placeholder={t('weeks', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
+                    <input type="number" value={usGaDays} onChange={(e) => setUsGaDays(e.target.value)} placeholder={t('days', lang)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-center"/>
                 </div>
             </div>
          </>
@@ -262,8 +284,19 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
   return (
     <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg max-w-3xl mx-auto">
       <h2 className="text-3xl font-bold text-primary-800 text-center">{t('gaCalculatorTitle', lang)}</h2>
-      <p className="text-center text-gray-500 mt-2">{t('gaCalculatorSubtitle', lang)}</p>
+      <p className="text-center text-gray-500 mt-2 mb-6">{t('gaCalculatorSubtitle', lang)}</p>
       
+      <div className="mb-6">
+        <label htmlFor="patientName" className="block text-sm font-bold text-gray-700 mb-2">{t('patientNamePrompt', lang)}</label>
+        <input 
+            type="text" 
+            id="patientName"
+            value={patientName}
+            onChange={(e) => setPatientName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+        />
+      </div>
+
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         {renderLMPForm()}
         {renderUltrasoundForm()}
@@ -272,13 +305,15 @@ export const GACalculator: React.FC<GACalculatorProps> = ({ onCalculate, lang })
       {error && <p className="text-red-500 text-sm text-center my-4">{error}</p>}
       
       {!result && (
-        <button
-            onClick={handleCalculate}
-            className="w-full mt-6 bg-primary-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-700 transition duration-300 flex items-center justify-center space-x-2 rtl:space-x-reverse text-lg"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-          <span>{t('calculateButton', lang)}</span>
-        </button>
+        <div className="mt-6">
+            <button
+                onClick={handleCalculate}
+                className="w-full bg-primary-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-700 transition duration-300 flex items-center justify-center space-x-2 rtl:space-x-reverse text-lg"
+            >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            <span>{t('calculateButton', lang)}</span>
+            </button>
+        </div>
       )}
 
       {result && renderResult()}
