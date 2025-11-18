@@ -1,3 +1,4 @@
+
 export const translations = {
   // General
   appName: {
@@ -9,6 +10,7 @@ export const translations = {
     en: "New Case",
   },
   saveCase: { fa: "ذخیره پرونده", en: "Save Case" },
+  save: { fa: "ذخیره", en: "Save" },
   manageCases: { fa: "مدیریت پرونده‌ها", en: "Manage Cases" },
   cases: { fa: "پرونده‌ها", en: "Cases" },
   patientManagerTitle: { fa: "لیست پرونده‌های ذخیره شده", en: "Saved Case List" },

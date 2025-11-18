@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { GACalculator } from './components/GACalculator';
 import { Dashboard } from './components/Dashboard';
@@ -188,7 +189,7 @@ const App: React.FC = () => {
   };
 
   const handleSwitchView = (newView: View) => {
-      if (newView === 'patientList') {
+      if (newView === 'patientList' || newView === 'newPatientForm') {
           setCurrentPregnancy(null);
           localStorage.removeItem(CURRENT_PREGNANCY_ID_KEY);
       }
@@ -274,6 +275,14 @@ const Header: React.FC<{
              <button onClick={toggleLanguage} className="text-sm font-medium text-primary-600 hover:text-primary-800 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                 {lang === 'fa' ? 'English' : 'فارسی'}
              </button>
+
+             {currentView !== 'newPatientForm' && (
+                <button onClick={() => onSwitchView('newPatientForm')} className="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2 rtl:space-x-reverse">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span className="hidden md:inline">{t('newCase', lang)}</span>
+                    <span className="md:hidden">{t('newCase', lang)}</span>
+                </button>
+             )}
              
              {currentView !== 'patientList' && (
                 <button onClick={() => onSwitchView('patientList')} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2 rtl:space-x-reverse">
@@ -284,7 +293,11 @@ const Header: React.FC<{
              )}
 
              {currentView === 'dashboard' && (
-                <button onClick={onSave} className="bg-accent hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">{t('saveCase', lang)}</button>
+                <button onClick={onSave} className="bg-accent hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2 rtl:space-x-reverse">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    <span className="hidden md:inline">{t('saveCase', lang)}</span>
+                    <span className="md:hidden">{t('save', lang)}</span>
+                </button>
              )}
           </div>
         </div>
@@ -292,17 +305,16 @@ const Header: React.FC<{
     );
 };
 
-
 // Footer Component
-const Footer: React.FC = () => (
-    <footer className="text-center py-6 mt-8 bg-gray-100 border-t">
-        <p className="text-sm text-gray-500">
-            Disclaimer: This tool is for informational and educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment.
-        </p>
-        <p className="text-sm text-gray-500 mt-1">
-            Always consult with a qualified healthcare provider for any medical concerns.
-        </p>
+const Footer: React.FC = () => {
+  return (
+    <footer className="bg-white border-t mt-12 py-6">
+        <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>© {new Date().getFullYear()} Obstetrics & Midwifery Assistant. For clinical reference only.</p>
+            <p className="mt-1">Based on ACOG, RCOG, and WHO guidelines.</p>
+        </div>
     </footer>
-);
+  );
+};
 
 export default App;
